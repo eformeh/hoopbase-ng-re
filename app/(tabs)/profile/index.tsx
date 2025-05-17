@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Settings, LogOut, MapPin, History, Edit } from 'lucide-react-native';
+import { Settings, LogOut, MapPin, History, CreditCard as Edit } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
