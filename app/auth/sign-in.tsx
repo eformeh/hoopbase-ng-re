@@ -22,7 +22,7 @@ export default function SignInScreen() {
 
       if (error) throw error;
 
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (error) {
       setError(error.message);
     } finally {

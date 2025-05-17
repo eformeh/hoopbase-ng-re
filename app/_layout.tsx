@@ -44,16 +44,16 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        {!session ? (
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-        ) : (
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        )}
-        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </>
-  );
+  <>
+    <Stack screenOptions={{ headerShown: false }}>
+      {!session ? (
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+      ) : (
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      )}
+      <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+    </Stack>
+    <StatusBar style="auto" />
+  </>
+);
 }

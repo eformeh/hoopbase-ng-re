@@ -19,8 +19,9 @@ export async function registerForPushNotifications() {
       return;
     }
 
-    const token = await Notifications.getExpoPushTokenAsync();
-    
+    const token = await Notifications.getExpoPushTokenAsync({
+            projectId: process.env.EXPO_PUBLIC_PROJECT_ID 
+    });
     // Save token to user's profile
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
