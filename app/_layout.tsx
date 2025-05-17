@@ -6,6 +6,7 @@ import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, P
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { registerForPushNotifications, startLocationUpdates } from '@/lib/notifications';
 
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
@@ -27,11 +28,17 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  useEffect(() => {
+    if (session) {
+      registerForPushNotifications();
+      startLocationUpdates();
+    }
+  }, [session]);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
-  // Show splash screen while checking authentication
   if (!initialized) {
     return null;
   }
