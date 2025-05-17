@@ -122,3 +122,19 @@ export async function scheduleEventReminder(event) {
     console.error('Error scheduling event reminder:', error);
   }
 }
+
+export async function sendTestLoginNotification(userName: string) {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Login Successful! 🎉',
+        body: `Welcome back${userName ? ', ' + userName : ''}! You've successfully logged in to HoopBaseNG.`,
+        data: { type: 'login_test' },
+      },
+      trigger: null, // null means it will show immediately
+    });
+    console.log('Test login notification sent');
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+  }
+}

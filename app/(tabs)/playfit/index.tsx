@@ -1,57 +1,34 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CirclePlay as PlayCircle, CircleCheck as CheckCircle, Calendar } from 'lucide-react-native';
-
-// Mock data for training plans
-const TRAINING_PLANS = [
-  {
-    id: '1',
-    title: 'Jump Higher in 4 Weeks',
-    image: 'https://images.pexels.com/photos/2834917/pexels-photo-2834917.jpeg',
-    duration: '4 weeks',
-    difficulty: 'Intermediate',
-    completionRate: 0,
-  },
-  {
-    id: '2',
-    title: 'Ball Handling Mastery',
-    image: 'https://images.pexels.com/photos/3755440/pexels-photo-3755440.jpeg',
-    duration: '6 weeks',
-    difficulty: 'Beginner',
-    completionRate: 0,
-  },
-  {
-    id: '3',
-    title: 'Shooting Fundamentals',
-    image: 'https://images.pexels.com/photos/3148452/pexels-photo-3148452.jpeg',
-    duration: '8 weeks',
-    difficulty: 'All Levels',
-    completionRate: 0,
-  },
-  {
-    id: '4',
-    title: 'Defensive Strength',
-    image: 'https://images.pexels.com/photos/2346/sport-high-united-states-of-america-ball.jpg',
-    duration: '5 weeks',
-    difficulty: 'Advanced',
-    completionRate: 0,
-  },
-];
-
-// Mock data for today's workout
-const TODAYS_WORKOUT = {
-  title: 'Explosive Legs Day',
-  exercises: [
-    { id: '1', name: 'Squat Jumps', sets: 3, reps: 12 },
-    { id: '2', name: 'Lunges', sets: 4, reps: 10 },
-    { id: '3', name: 'Calf Raises', sets: 3, reps: 15 },
-  ],
-};
+import { fetchTrainingPlans, fetchTodaysWorkout } from '@/lib/training';
 
 export default function PlayFitScreen() {
   const router = useRouter();
+  const [trainingPlans, setTrainingPlans] = useState([]);
+  const [todaysWorkout, setTodaysWorkout] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [activePlan, setActivePlan] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const plans = await fetchTrainingPlans();
+      setTrainingPlans(plans);
+
+      const workout = await fetchTodaysWorkout();
+      setTodaysWorkout(workout);
+    } catch (error) {
+      console.error('Error loading training data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderTrainingPlanItem = ({ item }) => (
     <TouchableOpacity
@@ -76,36 +53,62 @@ export default function PlayFitScreen() {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#F97316" />
+        <Text style={styles.loadingText}>Loading training plans...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Today's workout card */}
-      <TouchableOpacity
-        style={styles.todaysWorkoutCard}
-        onPress={() => router.push('/playfit/workout')}>
-        <View style={styles.workoutCardContent}>
+      {todaysWorkout ? (
+        <TouchableOpacity
+          style={styles.todaysWorkoutCard}
+          onPress={() => router.push({
+            pathname: '/playfit/workout',
+            params: { id: todaysWorkout.id }
+          })}>
+          <View style={styles.workoutCardContent}>
+            <Text style={styles.sectionTitle}>Today's Workout</Text>
+            <Text style={styles.workoutTitle}>{todaysWorkout.title}</Text>
+            <Text style={styles.workoutExerciseCount}>
+              {todaysWorkout.exercises.length} exercises
+            </Text>
+          </View>
+          <View style={styles.workoutCardAction}>
+            <PlayCircle size={28} color="#F97316" />
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.noWorkoutCard}>
           <Text style={styles.sectionTitle}>Today's Workout</Text>
-          <Text style={styles.workoutTitle}>{TODAYS_WORKOUT.title}</Text>
-          <Text style={styles.workoutExerciseCount}>
-            {TODAYS_WORKOUT.exercises.length} exercises
-          </Text>
+          <Text style={styles.noWorkoutText}>No workout scheduled for today</Text>
         </View>
-        <View style={styles.workoutCardAction}>
-          <PlayCircle size={28} color="#F97316" />
-        </View>
-      </TouchableOpacity>
+      )}
 
       {/* Training plans section */}
       <Text style={styles.sectionTitle}>Training Plans</Text>
-      <FlatList
-        data={TRAINING_PLANS}
-        renderItem={renderTrainingPlanItem}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.plansList}
-      />
+      {trainingPlans.length > 0 ? (
+        <FlatList
+          data={trainingPlans}
+          renderItem={renderTrainingPlanItem}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.plansList}
+        />
+      ) : (
+        <View style={styles.noPlansContainer}>
+          <Text style={styles.noPlansText}>No training plans available</Text>
+        </View>
+      )}
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

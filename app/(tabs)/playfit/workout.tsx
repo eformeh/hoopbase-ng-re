@@ -1,74 +1,112 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CirclePlay as PlayCircle, CircleCheck as CheckCircle, Clock, RotateCcw, Flag } from 'lucide-react-native';
-
-// Mock data for today's workout
-const WORKOUT = {
-  title: 'Explosive Legs Day',
-  description: 'Focus on explosive movements to build power in your lower body.',
-  duration: '45 minutes',
-  exercises: [
-    {
-      id: '1',
-      name: 'Squat Jumps',
-      sets: 3,
-      reps: 12,
-      description: 'Start in a squat position, then explode upward into a jump. Land softly back in the squat position.',
-      image: 'https://images.pexels.com/photos/4164761/pexels-photo-4164761.jpeg',
-      videoUrl: 'https://example.com/squat-jumps',
-      completed: false,
-    },
-    {
-      id: '2',
-      name: 'Lunges',
-      sets: 4,
-      reps: 10,
-      description: 'Step forward with one leg, lowering your hips until both knees are bent at about a 90-degree angle.',
-      image: 'https://images.pexels.com/photos/4498303/pexels-photo-4498303.jpeg',
-      videoUrl: 'https://example.com/lunges',
-      completed: false,
-    },
-    {
-      id: '3',
-      name: 'Calf Raises',
-      sets: 3,
-      reps: 15,
-      description: 'Stand with your feet hip-width apart, then raise your heels off the ground.',
-      image: 'https://images.pexels.com/photos/6456301/pexels-photo-6456301.jpeg',
-      videoUrl: 'https://example.com/calf-raises',
-      completed: false,
-    },
-  ],
-};
+import { fetchWorkout, updateExerciseCompletion } from '@/lib/training';
 
 export default function WorkoutScreen() {
-  const [exercises, setExercises] = useState(WORKOUT.exercises);
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const [workout, setWorkout] = useState(null);
+  interface Exercise {
+    id: string;
+    completed: boolean;
+    name: string;
+    sets: number;
+    reps: number;
+    description: string;
+    image: string;
+    videoUrl?: string;
+  }
   
-  const toggleExerciseCompletion = (id: string) => {
-    setExercises(prevExercises => 
-      prevExercises.map(exercise => 
-        exercise.id === id 
-          ? { ...exercise, completed: !exercise.completed } 
-          : exercise
-      )
-    );
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    loadWorkout();
+  }, [id]);
+  
+  const loadWorkout = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    try {
+      const workoutData = await fetchWorkout(id as string);
+      setWorkout(workoutData);
+      setExercises(workoutData.exercises || []);
+    } catch (error) {
+      console.error('Error loading workout:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   
-  const isWorkoutComplete = exercises.every(exercise => exercise.completed);
-  const completionPercentage = Math.round(
-    (exercises.filter(exercise => exercise.completed).length / exercises.length) * 100
-  );
+  const toggleExerciseCompletion = async (exerciseId: string) => {
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) return;
+    
+    const newCompletionState = !exercise.completed;
+    
+    // Update locally first for immediate UI feedback
+    setExercises(prevExercises => 
+      prevExercises.map(ex => 
+        ex.id === exerciseId 
+          ? { ...ex, completed: newCompletionState } 
+          : ex
+      )
+    );
+    
+    // Then update in the database
+    try {
+      await updateExerciseCompletion(exerciseId, newCompletionState);
+    } catch (error) {
+      console.error('Error updating exercise completion:', error);
+      
+      // Revert the local state if the API call fails
+      setExercises(prevExercises => 
+        prevExercises.map(ex => 
+          ex.id === exerciseId 
+            ? { ...ex, completed: exercise.completed } 
+            : ex
+        )
+      );
+    }
+  };
+  
+  const isWorkoutComplete = exercises.length > 0 && exercises.every(exercise => exercise.completed);
+  const completionPercentage = exercises.length > 0
+    ? Math.round(
+        (exercises.filter(exercise => exercise.completed).length / exercises.length) * 100
+      )
+    : 0;
+  
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#F97316" />
+        <Text style={styles.loadingText}>Loading workout...</Text>
+      </View>
+    );
+  }
+  
+  if (!workout) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <Text style={styles.errorText}>Workout not found</Text>
+      </View>
+    );
+  }
   
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.workoutTitle}>{WORKOUT.title}</Text>
-        <Text style={styles.workoutDescription}>{WORKOUT.description}</Text>
+        <Text style={styles.workoutTitle}>{workout.title}</Text>
+        <Text style={styles.workoutDescription}>{workout.description}</Text>
         
         <View style={styles.workoutMetadata}>
           <View style={styles.metadataItem}>
             <Clock size={16} color="#64748B" />
-            <Text style={styles.metadataText}>{WORKOUT.duration}</Text>
+            <Text style={styles.metadataText}>{workout.duration}</Text>
           </View>
         </View>
       </View>
@@ -103,10 +141,12 @@ export default function WorkoutScreen() {
             </Text>
             
             <View style={styles.exerciseActions}>
-              <TouchableOpacity style={styles.watchButton}>
-                <PlayCircle size={20} color="#F97316" />
-                <Text style={styles.watchButtonText}>Watch Demo</Text>
-              </TouchableOpacity>
+              {exercise.videoUrl && (
+                <TouchableOpacity style={styles.watchButton}>
+                  <PlayCircle size={20} color="#F97316" />
+                  <Text style={styles.watchButtonText}>Watch Demo</Text>
+                </TouchableOpacity>
+              )}
               
               <TouchableOpacity 
                 style={[
@@ -138,6 +178,7 @@ export default function WorkoutScreen() {
           isWorkoutComplete ? styles.finishWorkoutButtonActive : styles.finishWorkoutButtonDisabled
         ]}
         disabled={!isWorkoutComplete}
+        onPress={() => router.back()}
       >
         <Flag size={20} color={isWorkoutComplete ? "#FFFFFF" : "#94A3B8"} />
         <Text 
@@ -152,6 +193,7 @@ export default function WorkoutScreen() {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

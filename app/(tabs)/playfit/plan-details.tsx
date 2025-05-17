@@ -1,94 +1,32 @@
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CircleCheck as CheckCircle, Calendar, Clock, ChartLine as LineChart, TrendingUp } from 'lucide-react-native';
-
-// Mock data for training plan details
-const PLANS = {
-  '1': {
-    id: '1',
-    title: 'Jump Higher in 4 Weeks',
-    image: 'https://images.pexels.com/photos/2834917/pexels-photo-2834917.jpeg',
-    description: 'Improve your vertical jump with this science-backed training program designed for basketball players.',
-    duration: '4 weeks',
-    difficulty: 'Intermediate',
-    workoutsPerWeek: 3,
-    completionRate: 0,
-    weeklyBreakdown: [
-      {
-        week: 1,
-        theme: 'Foundation',
-        workouts: [
-          { id: 'w1d1', day: 'Monday', title: 'Lower Body Strength', completed: false },
-          { id: 'w1d2', day: 'Wednesday', title: 'Plyometric Basics', completed: false },
-          { id: 'w1d3', day: 'Friday', title: 'Core & Stability', completed: false },
-        ]
-      },
-      {
-        week: 2,
-        theme: 'Power Development',
-        workouts: [
-          { id: 'w2d1', day: 'Monday', title: 'Explosive Strength', completed: false },
-          { id: 'w2d2', day: 'Wednesday', title: 'Jump Variations', completed: false },
-          { id: 'w2d3', day: 'Friday', title: 'Dynamic Stretching', completed: false },
-        ]
-      },
-      {
-        week: 3,
-        theme: 'Intensity',
-        workouts: [
-          { id: 'w3d1', day: 'Monday', title: 'Max Effort Jumps', completed: false },
-          { id: 'w3d2', day: 'Wednesday', title: 'Reactive Training', completed: false },
-          { id: 'w3d3', day: 'Friday', title: 'Speed & Agility', completed: false },
-        ]
-      },
-      {
-        week: 4,
-        theme: 'Performance',
-        workouts: [
-          { id: 'w4d1', day: 'Monday', title: 'Jump Integration', completed: false },
-          { id: 'w4d2', day: 'Wednesday', title: 'Game Situations', completed: false },
-          { id: 'w4d3', day: 'Friday', title: 'Final Assessment', completed: false },
-        ]
-      },
-    ]
-  },
-  '2': {
-    id: '2',
-    title: 'Ball Handling Mastery',
-    image: 'https://images.pexels.com/photos/3755440/pexels-photo-3755440.jpeg',
-    description: 'Master the art of ball handling with progressive drills designed to improve your control and confidence.',
-    duration: '6 weeks',
-    difficulty: 'Beginner',
-    workoutsPerWeek: 4,
-    completionRate: 0,
-    weeklyBreakdown: [
-      {
-        week: 1,
-        theme: 'Basics',
-        workouts: [
-          { id: 'w1d1', day: 'Monday', title: 'Stationary Dribbling', completed: false },
-          { id: 'w1d2', day: 'Tuesday', title: 'Hand Coordination', completed: false },
-          { id: 'w1d3', day: 'Thursday', title: 'Basic Movements', completed: false },
-          { id: 'w1d4', day: 'Friday', title: 'Dribble Sequences', completed: false },
-        ]
-      },
-      // Additional weeks would be defined here
-    ]
-  },
-  // Additional plans would be defined here
-};
+import { fetchTrainingPlanById } from '@/lib/training';
 
 export default function PlanDetailsScreen() {
   const { id } = useLocalSearchParams();
-  const plan = PLANS[id as string];
+  const router = useRouter();
+  const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!plan) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Plan not found</Text>
-      </View>
-    );
-  }
+  useEffect(() => {
+    loadPlanDetails();
+  }, [id]);
+
+  const loadPlanDetails = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    try {
+      const planData = await fetchTrainingPlanById(id as string);
+      setPlan(planData);
+    } catch (error) {
+      console.error('Error loading plan details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderWeekItem = ({ item }) => (
     <View style={styles.weekContainer}>
@@ -97,7 +35,14 @@ export default function PlanDetailsScreen() {
       </View>
       
       {item.workouts.map((workout) => (
-        <TouchableOpacity key={workout.id} style={styles.workoutItem}>
+        <TouchableOpacity 
+          key={workout.id} 
+          style={styles.workoutItem}
+          onPress={() => router.push({
+            pathname: '/playfit/workout',
+            params: { id: workout.id }
+          })}
+        >
           <View style={styles.workoutDay}>
             <Text style={styles.dayText}>{workout.day}</Text>
           </View>
@@ -115,6 +60,23 @@ export default function PlanDetailsScreen() {
       ))}
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#F97316" />
+        <Text style={styles.loadingText}>Loading plan details...</Text>
+      </View>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Plan not found</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>

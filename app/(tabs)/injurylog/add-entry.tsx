@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Save, Plus, Minus, X } from 'lucide-react-native';
+import { addPainLog, getPainLevelColor } from '@/lib/injury';
 
 // Body parts for injury location
 const BODY_PARTS = [
@@ -24,10 +25,33 @@ export default function AddEntryScreen() {
   const [selectedRehab, setSelectedRehab] = useState([]);
   const [customRehab, setCustomRehab] = useState('');
   const [customRehabItems, setCustomRehabItems] = useState([]);
+  const [saving, setSaving] = useState(false);
   
-  const handleSave = () => {
-    // In a real app, you would save to storage/database here
-    router.back();
+  const handleSave = async () => {
+    if (!location) {
+      alert('Please select an injury location');
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      // Combine selected and custom rehab items
+      const rehab = [...selectedRehab, ...customRehabItems];
+      
+      await addPainLog({
+        pain_level: painLevel,
+        location,
+        notes,
+        rehab,
+      });
+      
+      router.replace('/injurylog');
+    } catch (error) {
+      console.error('Error saving pain log:', error);
+      alert('Failed to save entry. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
   
   const increasePain = () => {
@@ -61,13 +85,6 @@ export default function AddEntryScreen() {
     setCustomRehabItems(customRehabItems.filter(rehab => rehab !== item));
   };
   
-  // Get color for pain level
-  const getPainLevelColor = () => {
-    if (painLevel <= 3) return '#10B981'; // Green for mild
-    if (painLevel <= 6) return '#F59E0B'; // Yellow/Orange for moderate
-    return '#EF4444'; // Red for severe
-  };
-  
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.section}>
@@ -92,7 +109,7 @@ export default function AddEntryScreen() {
           <View style={styles.painLevelIndicator}>
             <Text style={[
               styles.painLevelValue,
-              { color: getPainLevelColor() }
+              { color: getPainLevelColor(painLevel) }
             ]}>
               {painLevel}
             </Text>
@@ -103,7 +120,7 @@ export default function AddEntryScreen() {
                   styles.painLevelFill,
                   { 
                     width: `${painLevel * 10}%`,
-                    backgroundColor: getPainLevelColor()
+                    backgroundColor: getPainLevelColor(painLevel)
                   }
                 ]}
               />
@@ -227,13 +244,22 @@ export default function AddEntryScreen() {
           </View>
         </View>
       </View>
-      
-      <TouchableOpacity 
-        style={styles.saveButton}
+            <TouchableOpacity 
+        style={[styles.saveButton, saving && styles.saveButtonDisabled]}
         onPress={handleSave}
+        disabled={saving || !location}
       >
-        <Save size={20} color="#FFFFFF" />
-        <Text style={styles.saveButtonText}>Save Entry</Text>
+        {saving ? (
+          <>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.saveButtonText}>Saving...</Text>
+          </>
+        ) : (
+          <>
+            <Save size={20} color="#FFFFFF" />
+            <Text style={styles.saveButtonText}>Save Entry</Text>
+          </>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );

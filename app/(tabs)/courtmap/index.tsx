@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Plus, Star, Users, Clock } from 'lucide-react-native';
+import { fetchCourts, type Court } from '@/lib/courts';
 
 // Only import MapView on native platforms
 const MapView = Platform.select({
@@ -14,242 +15,12 @@ const Marker = Platform.select({
   default: () => null,
 })();
 
-// Mock data for basketball courts
-const COURTS = [
-  {
-    id: '1',
-    name: 'National Stadium Courts',
-    address: 'Surulere, Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 4.5,
-    totalRatings: 28,
-    isBusy: true,
-    freeAccess: true,
-    latitude: 6.4968,
-    longitude: 3.3702,
-  },
-  {
-    id: '2',
-    name: 'Teslim Balogun Stadium',
-    address: 'Lagos Island',
-    image: 'https://images.pexels.com/photos/2277981/pexels-photo-2277981.jpeg',
-    rating: 4.2,
-    totalRatings: 15,
-    isBusy: false,
-    freeAccess: false,
-    latitude: 6.5125,
-    longitude: 3.3662,
-  },
-  {
-    id: '3',
-    name: 'University of Lagos Courts',
-    address: 'Akoka, Yaba',
-    image: 'https://images.pexels.com/photos/1145793/pexels-photo-1145793.jpeg',
-    rating: 4.7,
-    totalRatings: 42,
-    isBusy: true,
-    freeAccess: true,
-    latitude: 6.5168,
-    longitude: 3.3898,
-  },
-  {
-    id: '4',
-    name: 'Dodan Barracks Court',
-    address: 'Ikoyi, Lagos',
-    image: 'https://images.pexels.com/photos/2351289/pexels-photo-2351289.jpeg',
-    rating: 3.9,
-    totalRatings: 12,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.4512,
-    longitude: 3.4179,
-  },
-  {
-    id: '5',
-    name: 'Dolphins Indoor Basketball Court',
-    address: 'Punch Estate, Olu Aboderin Street, Mangoro, Ikeja, Lagos',
-    image: 'https://images.pexels.com/photos/1716764/pexels-photo-1716764.jpeg',
-    rating: 4.5,
-    totalRatings: 4,
-    isBusy: true,
-    freeAccess: false,
-    latitude: 6.6055,
-    longitude: 3.3372,
-  },
-  {
-    id: '6',
-    name: 'Dodan Warriors Basketball Court',
-    address: '28/32 Ilupeju Industrial Ave, Ilupeju, Lagos',
-    image: 'https://images.pexels.com/photos/3148452/pexels-photo-3148452.jpeg',
-    rating: 4.3,
-    totalRatings: 8,
-    isBusy: true,
-    freeAccess: true,
-    latitude: 6.5532,
-    longitude: 3.3614,
-  },
-  {
-    id: '7',
-    name: 'LUTH Basketball Court',
-    address: 'Idi Oro, Lagos',
-    image: 'https://images.pexels.com/photos/1305341/pexels-photo-1305341.jpeg',
-    rating: 3.7,
-    totalRatings: 7,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.5112,
-    longitude: 3.3573,
-  },
-  {
-    id: '8',
-    name: 'Laspark Basketball Court',
-    address: 'Ikorodu Recreational Centre, Dangote Ebutte Ipakodo, Ikorodu, Lagos',
-    image: 'https://images.pexels.com/photos/2329598/pexels-photo-2329598.jpeg',
-    rating: 4.2,
-    totalRatings: 5,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.6162,
-    longitude: 3.5045,
-  },
-  {
-    id: '9',
-    name: 'IBA Wolves Basketball Court',
-    address: 'Iba Housing Estate, Zone A, Carpark 2, Ojo, Lagos',
-    image: 'https://images.pexels.com/photos/3631430/pexels-photo-3631430.jpeg',
-    rating: 4.0,
-    totalRatings: 1,
-    isBusy: true,
-    freeAccess: true,
-    latitude: 6.4781,
-    longitude: 3.1982,
-  },
-  {
-    id: '10',
-    name: 'Ndubuisi Kanu Park Basketball Court',
-    address: 'Mobolaji Johnson Ave, Oregun, Ikeja, Lagos',
-    image: 'https://images.pexels.com/photos/2351283/pexels-photo-2351283.jpeg',
-    rating: 3.0,
-    totalRatings: 2,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.5982,
-    longitude: 3.3676,
-  },
-  {
-    id: '11',
-    name: 'Campos Basketball Court',
-    address: 'Lagos Island',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 4.0,
-    totalRatings: 0,
-    isBusy: true,
-    freeAccess: true,
-    latitude: 6.4542,
-    longitude: 3.3947,
-  },
-  {
-    id: '12',
-    name: 'Abesan Mini Stadium',
-    address: 'Jakande Low-Cost Housing Estate, Iyana Ipaja, Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 3.8,
-    totalRatings: 0,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.6165,
-    longitude: 3.2682,
-  },
-  {
-    id: '13',
-    name: 'Rowe Park Sports Complex',
-    address: 'Mobolaji Johnson Ave, Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 4.3,
-    totalRatings: 0,
-    isBusy: true,
-    freeAccess: false,
-    latitude: 6.5917,
-    longitude: 3.3504,
-  },
-  {
-    id: '14',
-    name: 'YMCA Basketball Court',
-    address: 'Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 3.5,
-    totalRatings: 0,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.4556,
-    longitude: 3.3947,
-  },
-  {
-    id: '15',
-    name: 'NSL Court',
-    address: 'Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 3.5,
-    totalRatings: 0,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.4931,
-    longitude: 3.3842,
-  },
-  {
-    id: '16',
-    name: 'Ejigbo Mini Stadium',
-    address: 'Ejigbo, Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 4.0,
-    totalRatings: 0,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.5655,
-    longitude: 3.3076,
-  },
-  {
-    id: '17',
-    name: 'Gaskiya College',
-    address: 'Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 3.5,
-    totalRatings: 0,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.5021,
-    longitude: 3.3567,
-  },
-  {
-    id: '18',
-    name: 'Egan Grammar School',
-    address: 'Lagos',
-    image: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg',
-    rating: 3.5,
-    totalRatings: 0,
-    isBusy: false,
-    freeAccess: true,
-    latitude: 6.5634,
-    longitude: 3.2341,
-  },
-  {
-    id: '19',
-    name: 'DREAM BIG Basketball Court',
-    address: 'Ijeshatedo Grammar School, Off Ibeh Street, Isolo, Lagos',
-    image: 'https://images.pexels.com/photos/945471/pexels-photo-945471.jpeg',
-    rating: 4.4,
-    totalRatings: 12,
-    isBusy: true,
-    freeAccess: true,
-    latitude: 6.5289,
-    longitude: 3.3297,
-  },
-];
-
 export default function CourtMapScreen() {
   const router = useRouter();
   const mapRef = useRef(null);
-  const [selectedCourt, setSelectedCourt] = useState(null);
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [loading, setLoading] = useState(true);
   const [region, setRegion] = useState({
     latitude: 6.5244,
     longitude: 3.3792,
@@ -257,7 +28,18 @@ export default function CourtMapScreen() {
     longitudeDelta: 0.0421,
   });
 
-  const handleCourtSelect = (court) => {
+  useEffect(() => {
+    loadCourts();
+  }, []);
+
+  const loadCourts = async () => {
+    setLoading(true);
+    const courtData = await fetchCourts();
+    setCourts(courtData);
+    setLoading(false);
+  };
+
+  const handleCourtSelect = (court: Court) => {
     setSelectedCourt(court);
     
     // Center map on selected court
@@ -271,7 +53,7 @@ export default function CourtMapScreen() {
     }
   };
 
-  const renderCourtItem = ({ item }) => (
+  const renderCourtItem = ({ item }: { item: Court }) => (
     <TouchableOpacity 
       style={styles.courtCard} 
       onPress={() => handleCourtSelect(item)}
@@ -336,7 +118,7 @@ export default function CourtMapScreen() {
         initialRegion={region}
         showsUserLocation={true}
       >
-        {COURTS.map((court) => (
+        {courts.map((court) => (
           <Marker
             key={court.id}
             coordinate={{
@@ -351,6 +133,14 @@ export default function CourtMapScreen() {
       </MapView>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.loadingText}>Loading courts...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -369,7 +159,7 @@ export default function CourtMapScreen() {
         </View>
         
         <FlatList
-          data={COURTS}
+          data={courts}
           renderItem={renderCourtItem}
           keyExtractor={(item) => item.id}
           horizontal
@@ -379,8 +169,8 @@ export default function CourtMapScreen() {
           decelerationRate="fast"
           onMomentumScrollEnd={(e) => {
             const index = Math.round(e.nativeEvent.contentOffset.x / 280);
-            if (COURTS[index]) {
-              handleCourtSelect(COURTS[index]);
+            if (courts[index]) {
+              handleCourtSelect(courts[index]);
             }
           }}
         />
@@ -405,6 +195,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 16,
+    color: '#64748B',
   },
   map: {
     flex: 1,

@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'rea
 import { useRouter } from 'expo-router';
 import { Settings, LogOut, MapPin, History, CreditCard as Edit } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { sendTestLoginNotification } from '@/lib/notifications'; // Add this import
+import { Bell } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -60,8 +62,25 @@ export default function ProfileScreen() {
     }
   };
 
+  // Later in your ProfileScreen component:
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // First, send a test notification
+      await sendTestLoginNotification(profile?.username || "User");
+
+      // Then sign out
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        console.error('Error signing out:', error);
+        return;
+      }
+
+      // Force navigation to auth screen
+      router.replace('/auth');
+    } catch (error) {
+      console.error('Exception during sign out:', error);
+    }
   };
 
   if (loading) {
@@ -76,18 +95,18 @@ export default function ProfileScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={{ 
+          source={{
             uri: profile?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg'
           }}
           style={styles.avatar}
         />
-        
+
         <View style={styles.userInfo}>
           <Text style={styles.username}>{profile?.username}</Text>
           <Text style={styles.bio}>{profile?.bio || 'No bio yet'}</Text>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.editButton}
           onPress={() => router.push('/profile/edit')}
         >
@@ -113,7 +132,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.menuSection}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuItem}
           onPress={() => router.push('/profile/settings')}
         >
@@ -121,15 +140,23 @@ export default function ProfileScreen() {
           <Text style={styles.menuItemText}>Settings</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuItem}
           onPress={() => router.push('/profile/history')}
         >
           <History size={24} color="#1E293B" />
           <Text style={styles.menuItemText}>Court History</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={async () => await sendTestLoginNotification(profile?.username || "Hooper")}
+        >
+          <Bell size={24} color="#3B82F6" />
+          <Text style={styles.menuItemText}>Test Notification</Text>
+        </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.menuItem, styles.signOutButton]}
           onPress={handleSignOut}
         >

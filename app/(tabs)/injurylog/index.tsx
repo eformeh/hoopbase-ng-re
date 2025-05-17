@@ -1,80 +1,42 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Clipboard, Calendar, ChartLine as LineChart, Plus, ArrowDown, ArrowUp, FileText, CreditCard as Edit } from 'lucide-react-native';
-
-// Mock data for pain logs
-const PAIN_LOGS = [
-  {
-    id: '1',
-    date: 'June 10, 2025',
-    painLevel: 7,
-    location: 'Right Knee',
-    notes: 'Pain during jumping and landing. Applied ice after practice.',
-    rehab: ['Ice', 'Stretching', 'Rest'],
-  },
-  {
-    id: '2',
-    date: 'June 9, 2025',
-    painLevel: 8,
-    location: 'Right Knee',
-    notes: 'Worse pain today. Skipped practice.',
-    rehab: ['Ice', 'Elevation', 'Rest'],
-  },
-  {
-    id: '3',
-    date: 'June 8, 2025',
-    painLevel: 5,
-    location: 'Right Knee',
-    notes: 'Started feeling pain during practice. Could be from new shoes.',
-    rehab: ['Ice', 'Stretching'],
-  },
-  {
-    id: '4',
-    date: 'June 5, 2025',
-    painLevel: 2,
-    location: 'Lower Back',
-    notes: 'Mild discomfort after weight training.',
-    rehab: ['Stretching'],
-  },
-];
-
-// Mock data for weekly trend
-const WEEKLY_TREND = [
-  { day: 'M', value: 3 },
-  { day: 'T', value: 5 },
-  { day: 'W', value: 4 },
-  { day: 'T', value: 6 },
-  { day: 'F', value: 5 },
-  { day: 'S', value: 8 },
-  { day: 'S', value: 7 },
-];
-
-// Helper function to get pain level color
-const getPainLevelColor = (level) => {
-  if (level <= 3) return '#10B981'; // Green for mild
-  if (level <= 6) return '#F59E0B'; // Yellow/Orange for moderate
-  return '#EF4444'; // Red for severe
-};
-
-// Helper function to get pain level label
-const getPainLevelLabel = (level) => {
-  if (level <= 3) return 'Mild';
-  if (level <= 6) return 'Moderate';
-  return 'Severe';
-};
+import { fetchPainLogs, getPainLevelColor, getPainLevelLabel, getWeeklyTrend, type PainLog } from '@/lib/injury';
 
 export default function InjuryLogScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState('all'); // 'all', 'week', 'month'
+  const [painLogs, setPainLogs] = useState<PainLog[]>([]);
+  const [weeklyTrend, setWeeklyTrend] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    loadData();
+  }, []);
+  
+  async function loadData() {
+    setLoading(true);
+    try {
+      const logs = await fetchPainLogs();
+      setPainLogs(logs);
+      
+      const trend = await getWeeklyTrend();
+      setWeeklyTrend(trend);
+    } catch (error) {
+      console.error('Error loading injury data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
   
   // Calculate current trend (up or down)
-  const latestTwoEntries = PAIN_LOGS.slice(0, 2);
+  const latestTwoEntries = painLogs.slice(0, 2);
   const trend = latestTwoEntries.length === 2 
-    ? latestTwoEntries[0].painLevel - latestTwoEntries[1].painLevel 
+    ? latestTwoEntries[0].pain_level - latestTwoEntries[1].pain_level 
     : 0;
   
-  const renderLogItem = ({ item }) => (
+  const renderLogItem = ({ item }: { item: PainLog }) => (
     <TouchableOpacity 
       style={styles.logItem}
       onPress={() => router.push({
@@ -86,13 +48,13 @@ export default function InjuryLogScreen() {
         <Text style={styles.logDate}>{item.date}</Text>
         <View style={[
           styles.painLevelBadge,
-          { backgroundColor: `${getPainLevelColor(item.painLevel)}20` }
+          { backgroundColor: `${getPainLevelColor(item.pain_level)}20` }
         ]}>
           <Text style={[
             styles.painLevelText,
-            { color: getPainLevelColor(item.painLevel) }
+            { color: getPainLevelColor(item.pain_level) }
           ]}>
-            {getPainLevelLabel(item.painLevel)} Pain ({item.painLevel}/10)
+            {getPainLevelLabel(item.pain_level)} Pain ({item.pain_level}/10)
           </Text>
         </View>
       </View>
@@ -116,6 +78,15 @@ export default function InjuryLogScreen() {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#F97316" />
+        <Text style={styles.loadingText}>Loading your pain logs...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
@@ -129,38 +100,46 @@ export default function InjuryLogScreen() {
             <Clipboard size={24} color="#64748B" />
           </View>
           
-          <View style={styles.painStatusContainer}>
-            <View style={styles.currentPainLevel}>
-              <Text style={styles.currentPainValue}>{PAIN_LOGS[0].painLevel}</Text>
-              <Text style={styles.currentPainLabel}>/10</Text>
-            </View>
-            
-            <View style={styles.painTrendContainer}>
-              <View style={styles.painTrend}>
-                {trend < 0 ? (
-                  <>
-                    <ArrowDown size={16} color="#10B981" />
-                    <Text style={[styles.trendText, styles.trendImproved]}>
-                      Improved by {Math.abs(trend)} points
-                    </Text>
-                  </>
-                ) : trend > 0 ? (
-                  <>
-                    <ArrowUp size={16} color="#EF4444" />
-                    <Text style={[styles.trendText, styles.trendWorsened]}>
-                      Worsened by {trend} points
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.trendText}>No change</Text>
-                )}
+          {painLogs.length > 0 ? (
+            <View style={styles.painStatusContainer}>
+              <View style={styles.currentPainLevel}>
+                <Text style={styles.currentPainValue}>{painLogs[0].pain_level}</Text>
+                <Text style={styles.currentPainLabel}>/10</Text>
               </View>
               
-              <Text style={styles.painLocationText}>
-                Primary: {PAIN_LOGS[0].location}
+              <View style={styles.painTrendContainer}>
+                <View style={styles.painTrend}>
+                  {trend < 0 ? (
+                    <>
+                      <ArrowDown size={16} color="#10B981" />
+                      <Text style={[styles.trendText, styles.trendImproved]}>
+                        Improved by {Math.abs(trend)} points
+                      </Text>
+                    </>
+                  ) : trend > 0 ? (
+                    <>
+                      <ArrowUp size={16} color="#EF4444" />
+                      <Text style={[styles.trendText, styles.trendWorsened]}>
+                        Worsened by {trend} points
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.trendText}>No change</Text>
+                  )}
+                </View>
+                
+                <Text style={styles.painLocationText}>
+                  Primary: {painLogs[0].location}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>
+                No pain logs yet. Add your first entry!
               </Text>
             </View>
-          </View>
+          )}
         </View>
         
         {/* Weekly Trend Chart */}
@@ -171,14 +150,14 @@ export default function InjuryLogScreen() {
           </View>
           
           <View style={styles.chartContainer}>
-            {WEEKLY_TREND.map((item, index) => (
+            {weeklyTrend.map((item, index) => (
               <View key={index} style={styles.chartColumn}>
                 <View style={styles.barContainer}>
                   <View 
                     style={[
                       styles.bar, 
                       { 
-                        height: `${(item.value * 10)}%`,
+                        height: `${item.value ? (item.value * 10) : 0}%`,
                         backgroundColor: getPainLevelColor(item.value)
                       }
                     ]} 
@@ -250,12 +229,20 @@ export default function InjuryLogScreen() {
             </TouchableOpacity>
           </View>
           
-          <FlatList
-            data={PAIN_LOGS}
-            renderItem={renderLogItem}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-          />
+          {painLogs.length > 0 ? (
+            <FlatList
+              data={painLogs}
+              renderItem={renderLogItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+            />
+          ) : (
+            <View style={styles.noLogsContainer}>
+              <Text style={styles.noLogsText}>
+                No pain logs found. Add your first entry to start tracking.
+              </Text>
+            </View>
+          )}
         </View>
         
         <View style={styles.actionButtonsContainer}>

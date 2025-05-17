@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { sendTestLoginNotification } from '@/lib/notifications';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export default function SignInScreen() {
       });
 
       if (error) throw error;
+    
+      await sendTestLoginNotification(email.split('@')[0]); // Use part of email as name
 
       router.replace('/');
     } catch (error) {
