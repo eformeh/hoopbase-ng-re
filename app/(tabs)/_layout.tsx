@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, Text } from 'react-native';
-import { Dumbbell, MapPin, Activity } from 'lucide-react-native';
+import { StyleSheet } from 'react-native';
+import { Dumbbell, MapPin, Activity, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -54,14 +54,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <User size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
