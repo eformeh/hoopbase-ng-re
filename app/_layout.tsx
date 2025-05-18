@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { registerForPushNotifications, startLocationUpdates } from '@/lib/notifications';
+import { ThemeProvider } from '@/hooks/useTheme';
 
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
@@ -44,16 +45,16 @@ export default function RootLayout() {
   }
 
   return (
-  <>
-    <Stack screenOptions={{ headerShown: false }}>
-      {!session ? (
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-      ) : (
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      )}
-      <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-    </Stack>
-    <StatusBar style="auto" />
-  </>
-);
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        {!session ? (
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+        ) : (
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        )}
+        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+      </Stack>
+      <StatusBar style="auto" />
+    </ThemeProvider>
+  );
 }
