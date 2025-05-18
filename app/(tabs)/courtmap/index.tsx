@@ -4,16 +4,9 @@ import { useRouter } from 'expo-router';
 import { MapPin, Plus, Star, Users, Clock } from 'lucide-react-native';
 import { fetchCourts, type Court } from '@/lib/courts';
 
-// Only import MapView on native platforms
-const MapView = Platform.select({
-  native: () => require('react-native-maps').default,
-  default: () => null,
-})();
-
-const Marker = Platform.select({
-  native: () => require('react-native-maps').Marker,
-  default: () => null,
-})();
+// Only import and define MapView and Marker when not on web
+const MapView = Platform.OS !== 'web' ? require('react-native-maps').default : null;
+const Marker = Platform.OS !== 'web' ? require('react-native-maps').Marker : null;
 
 export default function CourtMapScreen() {
   const router = useRouter();
