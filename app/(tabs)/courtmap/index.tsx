@@ -4,9 +4,15 @@ import { useRouter } from 'expo-router';
 import { MapPin, Plus, Star, Users, Clock } from 'lucide-react-native';
 import { fetchCourts, type Court } from '@/lib/courts';
 
-// Only import and define MapView and Marker when not on web
-const MapView = Platform.OS !== 'web' ? require('react-native-maps').default : null;
-const Marker = Platform.OS !== 'web' ? require('react-native-maps').Marker : null;
+// Only import MapView and Marker when not on web
+let MapView: any = null;
+let Marker: any = null;
+
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+}
 
 export default function CourtMapScreen() {
   const router = useRouter();
@@ -100,8 +106,6 @@ export default function CourtMapScreen() {
         </View>
       );
     }
-
-    if (!MapView || !Marker) return null;
 
     return (
       <MapView
