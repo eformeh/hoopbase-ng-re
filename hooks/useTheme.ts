@@ -22,7 +22,11 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-export function ThemeProvider({ children }) {
+interface ThemeProviderProps {
+  children: React.ReactNode;
+}
+
+export function ThemeProvider({ children }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
   const [theme, setThemeState] = useState<Theme>('system');
 
@@ -57,9 +61,8 @@ export function ThemeProvider({ children }) {
 
   const isDark = theme === 'system' ? systemColorScheme === 'dark' : theme === 'dark';
 
-  return (
-    <ThemeContext.Provider value={{ theme, isDark, setTheme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return React.createElement(ThemeContext.Provider, {
+    value: { theme, isDark, setTheme, toggleTheme },
+    children
+  });
 }
