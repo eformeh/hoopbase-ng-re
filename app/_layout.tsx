@@ -48,7 +48,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <Stack screenOptions={{ headerShown: false }}>
         {!session ? (
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="auth\" options={{ headerShown: false }} />
         ) : (
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         )}
