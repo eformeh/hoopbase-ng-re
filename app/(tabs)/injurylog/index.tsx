@@ -8,7 +8,7 @@ export default function InjuryLogScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState('all'); // 'all', 'week', 'month'
   const [painLogs, setPainLogs] = useState<PainLog[]>([]);
-  const [weeklyTrend, setWeeklyTrend] = useState([]);
+  const [weeklyTrend, setWeeklyTrend] = useState<{ day: string, value: number }[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -265,6 +265,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+    loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 16,
+    color: '#64748B',
+    marginTop: 12,
   },
   scrollContainer: {
     padding: 16,

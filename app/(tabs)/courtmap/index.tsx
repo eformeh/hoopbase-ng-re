@@ -16,7 +16,7 @@ if (Platform.OS !== 'web') {
 
 export default function CourtMapScreen() {
   const router = useRouter();
-  const mapRef = useRef(null);
+  const mapRef = useRef<any>(null);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [courts, setCourts] = useState<Court[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +33,8 @@ export default function CourtMapScreen() {
 
   const loadCourts = async () => {
     setLoading(true);
-    const courtData = await fetchCourts();
-    setCourts(courtData);
+    const { courts } = await fetchCourts(); // Destructure courts from the returned object
+    setCourts(courts);
     setLoading(false);
   };
 

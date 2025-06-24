@@ -19,13 +19,14 @@ const REHAB_ACTIVITIES = [
 
 export default function AddEntryScreen() {
   const router = useRouter();
-  const [painLevel, setPainLevel] = useState(5);
-  const [location, setLocation] = useState('');
-  const [notes, setNotes] = useState('');
-  const [selectedRehab, setSelectedRehab] = useState([]);
-  const [customRehab, setCustomRehab] = useState('');
-  const [customRehabItems, setCustomRehabItems] = useState([]);
-  const [saving, setSaving] = useState(false);
+  const [painLevel, setPainLevel] = useState<number>(5);
+  const [location, setLocation] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+  const [selectedRehab, setSelectedRehab] = useState<string[]>([]);
+  const [customRehab, setCustomRehab] = useState<string>('');
+  const [customRehabItems, setCustomRehabItems] = useState<string[]>([]);
+  const [saving, setSaving] = useState<boolean>(false);
+
   
   const handleSave = async () => {
     if (!location) {
@@ -66,7 +67,7 @@ export default function AddEntryScreen() {
     }
   };
   
-  const toggleRehabActivity = (activity) => {
+  const toggleRehabActivity = (activity: string) => {
     if (selectedRehab.includes(activity)) {
       setSelectedRehab(selectedRehab.filter(item => item !== activity));
     } else {
@@ -75,13 +76,18 @@ export default function AddEntryScreen() {
   };
   
   const addCustomRehab = () => {
-    if (customRehab.trim() !== '') {
-      setCustomRehabItems([...customRehabItems, customRehab.trim()]);
+    const trimmed = customRehab.trim();
+    if (
+      trimmed !== '' &&
+      !customRehabItems.includes(trimmed) &&
+      !REHAB_ACTIVITIES.includes(trimmed)
+    ) {
+      setCustomRehabItems([...customRehabItems, trimmed]);
       setCustomRehab('');
     }
   };
   
-  const removeCustomRehab = (item) => {
+  const removeCustomRehab = (item: string) => {
     setCustomRehabItems(customRehabItems.filter(rehab => rehab !== item));
   };
   
@@ -213,35 +219,46 @@ export default function AddEntryScreen() {
         <View style={styles.customRehabContainer}>
           <Text style={styles.customRehabTitle}>Add Custom Activities</Text>
           
-          <View style={styles.customRehabInputContainer}>
-            <TextInput
-              style={styles.customRehabInput}
-              placeholder="Enter activity..."
-              value={customRehab}
-              onChangeText={setCustomRehab}
-            />
-            
-            <TouchableOpacity 
-              style={styles.addCustomButton}
-              onPress={addCustomRehab}
-            >
-              <Plus size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.customRehabList}>
-            {customRehabItems.map((item, index) => (
-              <View key={index} style={styles.customRehabItem}>
-                <Text style={styles.customRehabItemText}>{item}</Text>
-                <TouchableOpacity 
-                  style={styles.removeCustomButton}
-                  onPress={() => removeCustomRehab(item)}
-                >
-                  <X size={16} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
+        <View style={styles.customRehabInputContainer}>
+          <TextInput
+            style={styles.customRehabInput}
+            placeholder="Enter activity..."
+            value={customRehab}
+            onChangeText={setCustomRehab}
+          />
+          <TouchableOpacity
+            style={[
+              styles.addCustomButton,
+              (
+                !customRehab.trim() ||
+                customRehabItems.includes(customRehab.trim()) ||
+                REHAB_ACTIVITIES.includes(customRehab.trim())
+              ) && { opacity: 0.5 }
+            ]}
+            onPress={addCustomRehab}
+            disabled={
+              !customRehab.trim() ||
+              customRehabItems.includes(customRehab.trim()) ||
+              REHAB_ACTIVITIES.includes(customRehab.trim())
+            }
+          >
+            <Plus size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.customRehabList}>
+          {customRehabItems.map((item) => (
+            <View key={item} style={styles.customRehabItem}>
+              <Text style={styles.customRehabItemText}>{item}</Text>
+              <TouchableOpacity
+                style={styles.removeCustomButton}
+                onPress={() => removeCustomRehab(item)}
+              >
+                <X size={16} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
         </View>
       </View>
             <TouchableOpacity 
@@ -460,6 +477,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 32,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#FDBA74',
   },
   saveButtonText: {
     fontFamily: 'Poppins-SemiBold',

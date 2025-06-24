@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Calendar, Clock, MapPin } from 'lucide-react-native';
+import { Calendar, MapPin } from 'lucide-react-native';
 import { fetchPainLogById, getPainLevelColor, getPainLevelLabel } from '@/lib/injury';
 
+type PainLog = {
+  id: string;
+  date: string;
+  pain_level: number;
+  location: string;
+  notes?: string;
+  rehab?: string[];
+};
 export default function EntryDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [painLog, setPainLog] = useState(null);
+  const [painLog, setPainLog] = useState<PainLog | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,22 +58,25 @@ export default function EntryDetailsScreen() {
     );
   }
 
-  return (
+ return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.dateContainer}>
           <Calendar size={18} color="#64748B" />
           <Text style={styles.dateText}>{painLog.date}</Text>
         </View>
-
-        <View style={[
-          styles.painLevelBadge,
-          { backgroundColor: `${getPainLevelColor(painLog.pain_level)}20` }
-        ]}>
-          <Text style={[
-            styles.painLevelText,
-            { color: getPainLevelColor(painLog.pain_level) }
-          ]}>
+        <View
+          style={[
+            styles.painLevelBadge,
+            { backgroundColor: `${getPainLevelColor(painLog.pain_level)}20` },
+          ]}
+        >
+          <Text
+            style={[
+              styles.painLevelText,
+              { color: getPainLevelColor(painLog.pain_level) },
+            ]}
+          >
             {getPainLevelLabel(painLog.pain_level)} Pain ({painLog.pain_level}/10)
           </Text>
         </View>
@@ -89,7 +100,7 @@ export default function EntryDetailsScreen() {
         {painLog.rehab && painLog.rehab.length > 0 ? (
           <View style={styles.rehabContainer}>
             {painLog.rehab.map((activity, index) => (
-              <View key={index} style={styles.rehabItem}>
+              <View key={activity + index} style={styles.rehabItem}>
                 <Text style={styles.rehabText}>{activity}</Text>
               </View>
             ))}

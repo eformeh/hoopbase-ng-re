@@ -5,13 +5,23 @@ import { Settings, LogOut, MapPin, History, CreditCard as Edit } from 'lucide-re
 import { supabase } from '@/lib/supabase';
 import { sendTestLoginNotification } from '@/lib/notifications'; // Add this import
 import { Bell } from 'lucide-react-native';
+import type { Profile } from '@/lib/profile';
+
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [profile, setProfile] = useState(null);
-  const [recentVisits, setRecentVisits] = useState([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
+const [recentVisits, setRecentVisits] = useState<CourtVisit[]>([]);
   const [loading, setLoading] = useState(true);
 
+  type CourtVisit = {
+  id: string;
+  visited_at: string;
+  courts: {
+    name: string;
+    address: string;
+  } | null;
+};
   useEffect(() => {
     fetchProfile();
     fetchRecentVisits();
@@ -118,17 +128,17 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         {recentVisits.map((visit) => (
-          <View key={visit.id} style={styles.activityItem}>
-            <MapPin size={20} color="#64748B" />
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>{visit.courts.name}</Text>
-              <Text style={styles.activitySubtitle}>{visit.courts.address}</Text>
-              <Text style={styles.activityDate}>
-                {new Date(visit.visited_at).toLocaleDateString()}
-              </Text>
+            <View key={visit.id} style={styles.activityItem}>
+              <MapPin size={20} color="#64748B" />
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>{visit.courts?.name || 'Unknown Court'}</Text>
+                <Text style={styles.activitySubtitle}>{visit.courts?.address || ''}</Text>
+                <Text style={styles.activityDate}>
+                  {visit.visited_at ? new Date(visit.visited_at).toLocaleDateString() : ''}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          ))}
       </View>
 
       <View style={styles.menuSection}>
